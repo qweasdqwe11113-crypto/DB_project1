@@ -1,0 +1,43 @@
+# IDE配置文件
+.idea/
+.vscode/
+*.iml
+
+# 编译产物
+target/
+bin/
+*.class
+
+# 数据库文件（不直接上传数据库）
+*.db
+pg_data/
+data/*.db
+
+# 日志文件
+*.log
+
+# 环境变量文件
+.env
+
+# 操作系统文件
+Thumbs.db
+.DS_Store
+
+# 临时文件
+*.tmp
+*.temp
+
+# 构建工具文件
+Mavenwrapper
+gradle-wrapper.jar
+
+# 测试覆盖率报告
+coverage/
+
+# 本地配置文件
+local.properties
+
+# 编辑器备份文件
+*~
+*.swp
+*.swo

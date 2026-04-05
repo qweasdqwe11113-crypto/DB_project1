@@ -1,0 +1,240 @@
+Spring 2026 CS307 Project Part1 
+Main Contributors:
+Leader and Overall Design: ZHU Yueming
+Document reviewer: WANG Zhongqiu 
+Data Tester: Yin Chaoyue
+General Requirement:
+It is a group project with only 2 teammates who are in the same lab session. Each group 
+should finish the project independently and submit only one report written by the 
+teammates.
+The teammate you select for Project 1 will also be your teammate for Project 2. It is not 
+allowed to change teammates once paired.
+You should submit the report before the deadline. All late submissions after the deadline will 
+receive a score of zero.
+DO NOT copy ANY sentences and figures from the Internet and your classmates. Plagiarism 
+is strictly prohibited in this course.
+The text description should be rigorous, the overall design should be logical organised, the 
+report structure and the layout of diagram should be clear and easy to read, otherwise, you 
+will receive a penalty in the scoring stage.
+The number of pages for your report should be between 10 and 16. Reports only or less 
+than 10 pages and more than 16 pages will receive a penalty in the scoring stage.
+DBMS can help us manage data in a convenient manner and improve the efficiency of data 
+retrieval. Your work of Project 1 is mainly divided into four parts below:
+1. Design an E-R diagram based on the provided data file and data relationships.
+2. Design a relational database using PostgreSQL according to the provided data file.
+3. Import all data into the database.
+4. Use a programming language to access the database and perform CRUD operations.
+Introduce Data 
+The raw data for this project comes from https://github.com/jpatokal/openflights
+. Based on the 
+original data, we have performed basic filtering and data integration, selecting flight routes from 
+certain cities to generate flight, tickets. You are required to analyze the data, filter out dirty data, 
+split tables, identify unique entries in each table, and complete the design of a relational database.
+The data we provide has been preliminarily integrated and comes from the following files:
+airline.csv
+airport.csv
+passenger.csv
+region.csv
+tickets.csv
+In addition to creating a relational database based on this data, we also need to import the data 
+into the database and generate primary keys. At the same time, the following requirements 
+should also be completed.
+Add the code of region to the Airport table. Note that there may be some duplicate region 
+data, and certain regions require special handling, such as Hong Kong. Please do not complain 
+about data issues, as in most cases, the data we obtain is not 100% aligned with our needs.
+The ticket table needs to be split. Therefore, you need to read carefully to determine which 
+columns can be extracted and split out.
+Create a new table called ticket_order, which represents the booking status of passenger. 
+It should include passenger information, ticket information, cabin class, as well as time and 
+date details.
+Analyze the following question: How to find flights that arrive before 11:00? During the 
+design process, you not only need to adhere to the First Normal Form principle, but also 
+consider query efficiency, which means the situation where the arrival time is +1 day must 
+be handled appropriately.
+Requirement of the Project Report 
+Note: Some tasks consist of basic requirements and advanced requirements. You may not get full 
+points if you only meet the basic ones. 
+Basic Information of Your Group 
+1. Names, student IDs, and the lab session of the group members
+2. You are required to write down the contributions and the percentages of contributions for 
+each group member. Please clearly state which task(s)/part of the task(s) is/are done by 
+which member in the group.
+If you failed to link a task/part of a task to one of the group members, we will not 
+count the score for the task (since we don't know who accomplished this task; maybe 
+it was done by an elf while you were sleeping at night?).
+About one page
+Task 1: E-R Diagram (20%) 
+Make an E-R Diagram of your database design with any diagram software. Hand-drawn results will 
+not be accepted. Please follow the standard of E-R diagrams.
+In the report, you are required to provide a snapshot of the E-R diagram. Also, please specify the 
+name of the software/online service you use for drawing the diagram.
+About one page
+Task 2: Database Design (20%) 
+Design the tables and columns based on the background provided above. Generate the E-R 
+diagram via the Show Visualization feature if you are using DataGrip (if you plan to use other 
+GUI database clients, please find the corresponding way by yourself to generate the E-R diagram 
+according to the client you use.).  Briefly describe the design of the tables and columns including 
+(but not limited to) the meanings of tables and columns
+In the report, you are required to provide the following content:
+1. Attach the snapshot of the E-R diagram generated by DataGrip.
+2. Briefly describe the table designs and the meanings of each table and column.
+In addition, please submit an SQL file as an attachment that contains the DDLs (
+create table 
+statements) for all the tables you created. Please make it into a separate file but not copy and 
+paste the statements into the report.
+About one or two pages
+Notes for the database design: 
+Following requirements you must be accomplished.
+1. All data items should base on csv file.
+2. Your design needs to follow the requirements of the three normal forms.
+3. Every row in each table should be uniquely identified by its primary key. (You may use a 
+simple or a composite primary key).
+4. Every table should be involved in a foreign key. No isolated table is allowed. (每个表要有外
+键，或者有其他表的外键指向。)
+5. Your design should contain no circular foreign-key links. (对于表之间的外键⽅向，不能有环。
+例如：A表有外键关联B表，B表有外健关联C表，C表有外健关联A表)
+6. You should use appropriate data types for different fields.
+Try to complete the following requirements
+1. Each table should contain at least one mandatory (“Not Null”) column (including the primary 
+key but not the id column).
+2. Other than the system-generated self-increment ID column, there should be at least one 
+column with the "unique" constraint. (除了主键⾃增的id之外，需要有其他unique约束的列)
+3. Your design should be easy to expand when requirements change. 
+Task 3: Data Import (30%) 
+In this task, you should write scripts to import the content in 
+csv into the database you have 
+designed before. After importing the data, you should also make sure all data is successfully 
+imported.
+Task 3.1 Basic Requirements: 5% 
+Introduce the scripts that being used to import data. You can list a similar table below to describe 
+the functions of all the scripts you submit in the attachment.
+Script name
+Author
+Description
+Script1.py
+xxx
+Run this script to complete the import of passenger data.
+A description of how you use the script to import 
+csv file. In this part, You should clearly state the 
+steps.
+You can create an intermediate file based on the original 
+intermediate file through a script. 
+You can also directly import 
+csv file, and then import the 
+csv file in a programming language and import it line by line. 
+If you manually modified the file, please also explain the specific modifications.
+About one or two pages
+Task 3.2 Data Accuracy checking: 15% 
+According to the data in csv file, we will give several questions in presentation week to check 
+whether all data have been correctly imported into your database.  Please prepare SQL queries 
+for the following requirements in the report, and you will run the queries by datagrip in  this part 
+during your presentation week.
+10% for accuracy
+5% for Whether to prepare SQL statements before and complete the process of accuracy 
+checking on time
+1. Given a 
+region code  , list all cities.
+2. Given a 
+city name , list all 
+airports and its 
+3. Given a 
+iata_code .
+region code , list all airlines, including 
+airline_code and 
+4. Given a 
+iata_code as departure and a 
+airline_name
+iata_code as an arrival airline, list all flights, 
+including following info:
+flight_number
+source_city
+source_region
+destination_city
+destination_region
+5. Given a 
+data , 
+departure city name and 
+arrival city name , find and list all tickets 
+including following info, and the result set should by ascending order of 
+departure_time
+arrive_time
+the name of departure airport
+the name of arrival airport
+economy price
+economy price :
+6. Continue to the question 5, add condition that find departure time after 
+time before 
+xxx .
+About two page
+Task 3.3 Advanced requirements: 10% 
+xxx and find arrivial 
+You may also need to finish the following advanced requirement to get the remaining points.
+2. Try to import data across multiple systems (e.g., Windows, MacOS, Linux).
+3. Experiment with other databases; we recommend use OpenGauss.
+4. Try to import data with different data volumes. For example, generate more tickets info. or 
+generate more tickets order.
+5. Import data as efficiently as possible, especially for the tickets table. From splitting to 
+importing, how should it be designed to achieve optimal efficiency?
+For the advanced points, please make sure to describe your test environment, procedures, and 
+actual time costs. It is required to write a paragraph or two to analyze the experiment results. 
+About 0 to 4 pages
+Task 4: Perform Create, Read, Update, and Delete (CRUD)
+operations using the database. (30%)
+In this section, 5% of the grade is allocated to your presentation skills, which includes your 
+familiarity with the system, your communication skills, and your time management 
+abilities.
+Basic requirements that you need complete in this part (15%)：
+1. Given a date range, generate tickets based on flight information. 
+2. Passengers can search tickets based on the following combination, and then return all 
+information about a ticket. Required fields must be filled in, and optional fields can be selected 
+(zero or multiple):
+Required: departure city, arrival city, date
+Optional: airline, departure time, arrival time
+3. Simulate a passenger's ticket booking process, and record the current time in the 
+ticket_order table. May includes:
+Search tickets (as in part 2)
+Select a ticket to book, and view the prices for economy class and business class
+Book the ticket: add a row to the 
+ticket_order table with the current time, and 
+decreasing the seat availability by one
+4. Support search ticket orders and deleting ticket orders.
+Advance requirements (10%):
+1. Find ways to improve the efficiency of the generation tickets process.
+2. In order management, add login and authentication functionality, ensuring that each person 
+can only view their own orders.
+3. Redesign the tables so that passengers can add their own contacts, and when booking 
+tickets, they can book not only for themselves but also for their contacts.
+4. Design a visually appealing user-facing interface.
+5. Comprehensive code design, such as being able to complete all functions with a single 
+program launch, and having a relatively complete architectural hierarchy within the program, 
+etc.
+Overall requirements in this section:
+For this part, you need to use Java, C++, or Python to access the database.
+All functions in this part require the design of command-line prompt output statements. 
+For example:
+Please select an operation:
+1. Generate tickets.
+2. Search Flights.
+3. Manager orders.
+>> Input:
+ 1
+Please input the date range:
+>> Input:
+   2026.04.10
+   2026.04.16
+...
+Finish Generate xxxx rows tickeds info.
+In your report, please  describe the features you implemented in this section, along with 
+screenshots of your operation.
+About 0 to 4 pages
+How to Submit Your Report 
+Submit the report in PDF format with necessary attachments (such as SQL scripts and source code 
+files) on the bb website before 23:55 on April 26th, 2026, Beijing Time (UTC+8). For attachments, 
+please put them into separate directories based on the task, and compress them into a 
+.zip 
+archive.
+Disclaimer 
+All names, characters, and events in the context of this project are purely fictional. The ticket data 
+in the files are randomly generated simulated data. Any resemblance to actual events, entities, or 
+persons is entirely coincidental and should not be interpreted as the views or implications of the 
+CS307 course teaching team.

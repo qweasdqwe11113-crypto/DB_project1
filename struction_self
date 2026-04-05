@@ -1,0 +1,73 @@
+- airline.csv ：存储航空公司信息，包含 id 、 code （航空公司代码）、 name （航空公司名称）、 region （所属地区）。
+id,code,name,region
+1,NS,Caucasus Airlines,Georgia
+2,MM,Peach Aviation,Japan
+3,FR,Ryanair,Ireland
+
+
+- `airport.csv`：存储机场信息，包含 `id`（机场ID）、`name`（机场名称）、`city`（所在城市）、`region`（所属地区）、
+`iata_code`（机场IATA代码）、`latitude`（纬度）、`longitude`（经度）、`altitude`（海拔高度）、
+`timezone_offset`（时区偏移）、`timezone_dst`（夏令时偏移）、`timezone_region`（时区区域）字段。
+id,name,city,region,iata_code,latitude,longitude,altitude,timezone_offset,timezone_dst,timezone_region
+1,London Luton Airport,London,United Kingdom,LTN,51.874699,-0.368333,526,0,E,Europe/London
+2,London City Airport,London,United Kingdom,LCY,51.505299,0.055278,19,0,E,Europe/London
+3,Barcelona International Airport,Barcelona,Spain,BCN,41.2971,2.07846,12,1,E,Europe/Madrid
+
+
+- passenger.csv ：存储乘客信息，包含 id 、 name （乘客姓名）、 age （年龄）、 gender （性别）、 mobile_number （手机号码）。
+id,name,age,gender,mobile_number
+1,Kong Yibo,47,Female,15038403217
+2,Steven Edwards,38,Male,15673757797
+3,Jiang Shengxiang,40,Male,15639234045
+
+
+- region.csv ：存储地区信息，包含 name （地区名称）、 code （地区代码）。
+name,code
+Bonaire Saint Eustatius and Saba,BQ
+Aruba,AW
+Antigua and Barbuda,AG
+
+
+-`tickets.csv`：存储机票信息，包含 `number`（航班号）、`airline_name`（航空公司名称）、
+`airline_region`（航空公司所属地区）、`source_city`（出发城市）、
+`source_region`（出发城市所属地区）、`source_code`（出发机场代码）、
+`destination_city`（到达城市）、`destination_region`（到达城市所属地区）、
+`destination_code`（到达机场代码）、`date`（日期）、`departure_time`（出发时间）、
+`arrival_time`（到达时间）、`business_price`（商务舱价格）、`business_remain`（商务舱剩余座位数）、
+`economy_price`（经济舱价格）、`economy_remain`（经济舱剩余座位数）字段（需拆分为 `flight` 和 `ticket` 表）。
+number,airline_name,airline_region,source_city,source_region,source_code,destination_city,destination_region,destination_code,date,departure_time,arrival_time,business_price,business_remain,economy_price,economy_remain
+ZB1763,Air Bourbon,Reunion,Rome,Italy,FCO,London,United Kingdom,LTN,2026/2/1,0:48,7:00,4164,6,1565,75
+ZB1763,Air Bourbon,Reunion,Rome,Italy,FCO,London,United Kingdom,LTN,2026/2/2,0:48,7:00,4396,6,1568,75
+
+
+分析：
+数据库表结构设计
+1. 地区表（region）
+- 字段 ： region_code （地区代码，主键）、 region_name （地区名称，非空）。
+- 关联 ：被 airline 、 airport 表引用。 
+2. 航空公司表（airline）
+- 字段 ： airline_code （航空公司代码，主键）、 airline_name （航空公司名称，非空）、 region_code （所属地区代码，外键）。
+- 关联 ：引用 region 表，被 flight 表引用。 
+3. 机场表（airport）
+- 字段 ： airport_code （机场IATA代码，主键）、 airport_name （机场名称，非空）、 city （所在城市，非空）、 region_code （所属地区代码，外键）、 latitude （纬度）、 longitude （经度）、 altitude （海拔高度）、 timezone_offset （时区偏移）、 timezone_dst （夏令时偏移）、 timezone_region （时区区域）。
+- 关联 ：引用 region 表，被 flight 表引用。 
+4. 乘客表（passenger）
+- 字段 ： passenger_id （乘客ID，主键）、 passenger_name （乘客姓名，非空）、 age （年龄）、 gender （性别）、 mobile_number （手机号码）。
+- 关联 ：被 ticket_order 表引用。 
+5. 航班表（flight）
+- 字段 ： flight_number （航班号，主键）、 airline_code （航空公司代码，外键）、 source_airport （出发机场代码，外键）、 destination_airport （到达机场代码，外键）、 flight_date （航班日期，非空）、 departure_time （出发时间，非空）、 arrival_time （到达时间，非空）。
+- 关联 ：引用 airline 、 airport 表，被 ticket 表引用。 
+6. 机票表（ticket）
+- 字段 ： ticket_id （机票ID，主键）、 flight_number （航班号，外键）、 business_price （商务舱价格，非空）、 business_remain （商务舱剩余座位数，非空）、 economy_price （经济舱价格，非空）、 economy_remain （经济舱剩余座位数，非空）。
+- 关联 ：引用 flight 表，被 ticket_order 表引用。 
+7. 机票订单表（ticket_order）
+- 字段 ： order_id （订单ID，主键）、 passenger_id （乘客ID，外键）、 ticket_id （机票ID，外键）、 cabin_class （舱位等级，非空）、 order_time （订单时间，非空）。
+- 关联 ：引用 passenger 、 ticket 表。
+数据导入说明
+- region.csv → region 表：导入 code （地区代码）、 name （地区名称）。
+- airline.csv → airline 表：导入 code （航空公司代码）、 name （航空公司名称）、 region （所属地区代码）。
+- airport.csv → airport 表：导入 iata_code （机场IATA代码）、 name （机场名称）、 city （所在城市）、 region （所属地区代码）、 latitude （纬度）、 longitude （经度）、 altitude （海拔高度）、 timezone_offset （时区偏移）、 timezone_dst （夏令时偏移）、 timezone_region （时区区域）。
+- passenger.csv → passenger 表：导入 id （乘客ID）、 name （乘客姓名）、 age （年龄）、 gender （性别）、 mobile_number （手机号码）。
+- tickets.csv → 需拆分后导入：
+- 提取航班信息（ number （航班号）、 source_code （出发机场代码）、 destination_code （到达机场代码）、 date （航班日期）、 departure_time （出发时间）、 arrival_time （到达时间））→ flight 表。
+- 提取机票信息（ number （航班号）、 business_price （商务舱价格）、 business_remain （商务舱剩余座位数）、 economy_price （经济舱价格）、 economy_remain （经济舱剩余座位数））→ ticket 表。
