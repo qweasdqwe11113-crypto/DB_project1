@@ -5,7 +5,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Scanner;
 
-public class get_region_by_region_code {
+public class listAirportsByCityName {
 	public static void main(String[] args) {
 		if (!main.Connection.initDriver()) {
 			return;
@@ -16,25 +16,24 @@ public class get_region_by_region_code {
 		}
 
 		try (Scanner scanner = new Scanner(System.in)) {
-			System.out.print("请输入地区代码（例如 CN）: ");
-			String regionCode = scanner.nextLine().trim().toUpperCase();
-			listCitiesByRegionCode(regionCode);
+			System.out.print("请输入城市名称（例如 London）: ");
+			String cityName = scanner.nextLine().trim();
+			listAirportsByCityName(cityName);
 		}
 	}
 
-	public static void listCitiesByRegionCode(String regionCode) {
+	public static void listAirportsByCityName(String cityName) {
 		String sql = """
-				SELECT DISTINCT a.city
+				SELECT DISTINCT a.airport_name, a.airport_code
 				FROM airport a
-				JOIN region r ON a.region_name = r.region_name
-				WHERE r.region_code = ?
-				ORDER BY a.city
+				WHERE a.city = ?
+				ORDER BY a.airport_name
 				""";
 
 		try (java.sql.Connection conn = main.Connection.getConnection();
 			 PreparedStatement ps = conn.prepareStatement(sql)) {
 
-			ps.setString(1, regionCode);
+			ps.setString(1, cityName);
 
 			try (ResultSet rs = ps.executeQuery()) {
 				boolean hasResult = false;
@@ -42,11 +41,16 @@ public class get_region_by_region_code {
 
 				while (rs.next()) {
 					hasResult = true;
-					System.out.println("- " + rs.getString("city"));
+					String airportName = rs.getString("airport_name");
+					String airportCode = rs.getString("airport_code");
+					if (airportCode == null || airportCode.isBlank()) {
+						airportCode = "N/A";
+					}
+					System.out.println("- " + airportName + " (iata_code=" + airportCode + ")");
 				}
 
 				if (!hasResult) {
-					System.out.println("未找到该地区代码对应的城市。");
+					System.out.println("未找到该城市对应的机场。");
 				}
 			}
 		} catch (SQLException e) {
