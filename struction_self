@@ -4,6 +4,11 @@ id,code,name,region
 2,MM,Peach Aviation,Japan
 3,FR,Ryanair,Ireland
 
+**分析**：
+- 所有行格式一致，每行包含四个字段：ID、航空公司代码、航空公司名称和所属地区，用逗号分隔。
+- 航空公司代码为两字母或数字组合的代码（如 NS 代表 Caucasus Airlines，MM 代表 Peach Aviation）。
+- 所属地区为地区名称（如 Georgia、Japan、Ireland），与 region.csv 中的地区名称对应。
+
 
 - `airport.csv`：存储机场信息，包含 `id`（机场ID）、`name`（机场名称）、`city`（所在城市）、`region`（所属地区）、
 `iata_code`（机场IATA代码）、`latitude`（纬度）、`longitude`（经度）、`altitude`（海拔高度）、
@@ -13,6 +18,14 @@ id,name,city,region,iata_code,latitude,longitude,altitude,timezone_offset,timezo
 2,London City Airport,London,United Kingdom,LCY,51.505299,0.055278,19,0,E,Europe/London
 3,Barcelona International Airport,Barcelona,Spain,BCN,41.2971,2.07846,12,1,E,Europe/Madrid
 
+**分析**：
+- 所有行的字段数量都是11个，格式一致
+- 机场IATA代码为三字母代码（如 LTN, LCY, BCN 等）
+- 所属地区为地区名称（如 United Kingdom, Spain, France 等）
+- 包含地理信息（经纬度、海拔高度）和时区信息（时区偏移、夏令时偏移、时区区域）
+- 部分行的 iata_code 字段为空（如第177行）
+- 部分行的 timezone_region 字段为空（如第200-204行）
+
 
 - passenger.csv ：存储乘客信息，包含 id 、 name （乘客姓名）、 age （年龄）、 gender （性别）、 mobile_number （手机号码）。
 id,name,age,gender,mobile_number
@@ -20,12 +33,24 @@ id,name,age,gender,mobile_number
 2,Steven Edwards,38,Male,15673757797
 3,Jiang Shengxiang,40,Male,15639234045
 
+**分析**：
+- 所有行的字段数量都是5个，格式一致
+- 性别字段值有三种：Male、Female、Unknown
+- 手机号码为11位数字（如 15038403217）
+- 年龄在38-49岁之间
+- 姓名包含中文和英文姓名
+
 
 - region.csv ：存储地区信息，包含 name （地区名称）、 code （地区代码）。
 name,code
 Bonaire Saint Eustatius and Saba,BQ
 Aruba,AW
 Antigua and Barbuda,AG
+
+**分析**：
+- 所有行格式一致，每行包含两个字段：地区名称和地区代码，用逗号分隔。
+- 部分行的 code 字段为空（如 Ashmore and Cartier Islands, Navassa Island 等）
+- 地区代码为国际标准化的两字母代码（如 CN 代表中国，US 代表美国）。
 
 
 -`tickets.csv`：存储机票信息，包含 `number`（航班号）、`airline_name`（航空公司名称）、
@@ -39,35 +64,65 @@ number,airline_name,airline_region,source_city,source_region,source_code,destina
 ZB1763,Air Bourbon,Reunion,Rome,Italy,FCO,London,United Kingdom,LTN,2026/2/1,0:48,7:00,4164,6,1565,75
 ZB1763,Air Bourbon,Reunion,Rome,Italy,FCO,London,United Kingdom,LTN,2026/2/2,0:48,7:00,4396,6,1568,75
 
+**分析**：
+- 所有行格式一致，每行包含16个字段，用逗号分隔。
+- 航班号为字母和数字组合（如 ZB1763）。
+- 出发和到达机场代码为三字母IATA代码（如 FCO 代表罗马机场，LTN 代表伦敦卢顿机场）。
+- 日期格式为 YYYY/MM/DD（如 2026/2/1）。
+- 时间格式为 HH:MM（如 0:48, 7:00）。
+- 价格为整数（如 4164, 1565）。
+- 剩余座位数为整数（如 6, 75）。
+- 需拆分为 flight 表（存储航班基本信息）和 ticket 表（存储机票价格和座位信息）。
+
 
 分析：
 数据库表结构设计
 1. 地区表（region）
-- 字段 ： region_code （地区代码，主键）、 region_name （地区名称，非空）。
+- 字段 ： region_name （地区名称，主键，非空）、 region_code （地区代码，可空）。
 - 关联 ：被 airline 、 airport 表引用。 
+- 说明 ：使用 region_name 作为主键，允许 region_code 为空，这样可以导入所有地区记录，包括原始数据中 code 字段为空的地区（如 Ashmore and Cartier Islands, Navassa Island 等）。
 2. 航空公司表（airline）
-- 字段 ： airline_code （航空公司代码，主键）、 airline_name （航空公司名称，非空）、 region_code （所属地区代码，外键）。
+- 字段 ： airline_code （航空公司代码，主键，非空）、 airline_name （航空公司名称，非空）、 region_name （所属地区名称，外键，可空）。
 - 关联 ：引用 region 表，被 flight 表引用。 
 3. 机场表（airport）
-- 字段 ： airport_code （机场IATA代码，主键）、 airport_name （机场名称，非空）、 city （所在城市，非空）、 region_code （所属地区代码，外键）、 latitude （纬度）、 longitude （经度）、 altitude （海拔高度）、 timezone_offset （时区偏移）、 timezone_dst （夏令时偏移）、 timezone_region （时区区域）。
+- 字段 ： airport_name （机场名称，主键，非空）、 airport_code （机场IATA代码，可空）、 city （所在城市，非空）、 region_name （所属地区名称，外键，可空）、 latitude （纬度，可空）、 longitude （经度，可空）、 altitude （海拔高度，可空）、 timezone_offset （时区偏移，可空）、 timezone_dst （夏令时偏移，可空）、 timezone_region （时区区域，可空）。
 - 关联 ：引用 region 表，被 flight 表引用。 
 4. 乘客表（passenger）
-- 字段 ： passenger_id （乘客ID，主键）、 passenger_name （乘客姓名，非空）、 age （年龄）、 gender （性别）、 mobile_number （手机号码）。
+- 字段 ： passenger_id （乘客ID，主键，非空）、 passenger_name （乘客姓名，非空）、 age （年龄，可空）、 gender （性别，可空）、 mobile_number （手机号码，可空）。
 - 关联 ：被 ticket_order 表引用。 
 5. 航班表（flight）
-- 字段 ： flight_number （航班号，主键）、 airline_code （航空公司代码，外键）、 source_airport （出发机场代码，外键）、 destination_airport （到达机场代码，外键）、 flight_date （航班日期，非空）、 departure_time （出发时间，非空）、 arrival_time （到达时间，非空）。
-- 关联 ：引用 airline 、 airport 表，被 ticket 表引用。 
+- 字段 ： flight_number （航班号，主键，非空）、 source_airport （出发机场名称，外键，可空）、 destination_airport （到达机场名称，外键，可空）、 flight_date （航班日期，可空）、 departure_time （出发时间，可空）、 arrival_time （到达时间，可空）、 arrival_day_offset （到达日偏移，非空，默认0）。
+- 关联 ：引用 airport 表，被 ticket 表引用。 
 6. 机票表（ticket）
-- 字段 ： ticket_id （机票ID，主键）、 flight_number （航班号，外键）、 business_price （商务舱价格，非空）、 business_remain （商务舱剩余座位数，非空）、 economy_price （经济舱价格，非空）、 economy_remain （经济舱剩余座位数，非空）。
+- 字段 ： ticket_id （机票ID，自增主键，非空）、 flight_number （航班号，外键，可空）、 business_price （商务舱价格，可空）、 business_remain （商务舱剩余座位数，可空）、 economy_price （经济舱价格，可空）、 economy_remain （经济舱剩余座位数，可空）。
 - 关联 ：引用 flight 表，被 ticket_order 表引用。 
 7. 机票订单表（ticket_order）
-- 字段 ： order_id （订单ID，主键）、 passenger_id （乘客ID，外键）、 ticket_id （机票ID，外键）、 cabin_class （舱位等级，非空）、 order_time （订单时间，非空）。
+- 字段 ： order_id （订单ID，自增主键，非空）、 passenger_id （乘客ID，外键，可空）、 ticket_id （机票ID，外键，可空）、 cabin_class （舱位等级，非空）、 order_time （订单时间，非空）。
 - 关联 ：引用 passenger 、 ticket 表。
 数据导入说明
-- region.csv → region 表：导入 code （地区代码）、 name （地区名称）。
-- airline.csv → airline 表：导入 code （航空公司代码）、 name （航空公司名称）、 region （所属地区代码）。
-- airport.csv → airport 表：导入 iata_code （机场IATA代码）、 name （机场名称）、 city （所在城市）、 region （所属地区代码）、 latitude （纬度）、 longitude （经度）、 altitude （海拔高度）、 timezone_offset （时区偏移）、 timezone_dst （夏令时偏移）、 timezone_region （时区区域）。
+- region.csv → region 表：导入 name （地区名称，作为主键）、 code （地区代码，可空）。
+- airline.csv → airline 表：导入 code （航空公司代码）、 name （航空公司名称）、 region （所属地区名称，作为外键）。
+- airport.csv → airport 表：导入 iata_code （机场IATA代码）、 name （机场名称）、 city （所在城市）、 region （所属地区名称，作为外键）、 latitude （纬度）、 longitude （经度）、 altitude （海拔高度）、 timezone_offset （时区偏移）、 timezone_dst （夏令时偏移）、 timezone_region （时区区域）。
 - passenger.csv → passenger 表：导入 id （乘客ID）、 name （乘客姓名）、 age （年龄）、 gender （性别）、 mobile_number （手机号码）。
 - tickets.csv → 需拆分后导入：
 - 提取航班信息（ number （航班号）、 source_code （出发机场代码）、 destination_code （到达机场代码）、 date （航班日期）、 departure_time （出发时间）、 arrival_time （到达时间））→ flight 表。
 - 提取机票信息（ number （航班号）、 business_price （商务舱价格）、 business_remain （商务舱剩余座位数）、 economy_price （经济舱价格）、 economy_remain （经济舱剩余座位数））→ ticket 表。
+
+
+
+问题：
+### 1. 数据重复问题
+- 表现 ： region.csv 文件中存在重复的地区记录（如 India,IN 在第35行和第114行都出现）
+- 影响 ：导入时可能导致重复数据
+- 解决方案 ：在导入脚本中使用 DISTINCT 关键字去重，确保每个地区名称只保留一条记录
+### 2. 同一个地方不同说法的问题
+- 表现 ：香港在不同文件中使用不同的名称
+  - region.csv ： Hong Kong
+  - airline.csv ： Hong Kong SAR of China
+  - tickets.csv ：两种名称都有
+- 影响 ：如果直接导入，会导致地区关联错误
+- 解决方案 ：在导入脚本中统一映射，将不同名称都映射到同一个地区代码 HK
+### 其他潜在问题
+- 数据类型一致性 ：时间格式（如 03:19(+1) ）需要特殊处理
+- 重复数据 ：可能存在重复的航班或乘客记录
+- 外键关联 ：确保所有外键都能在对应表中找到匹配记录
