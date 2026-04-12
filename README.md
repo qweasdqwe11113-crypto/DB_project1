@@ -1,91 +1,206 @@
-# CS307 数据库项目 Part1
+# CS307 Database Project Part 1
 
 ## 项目简介
+本项目是 CS307 课程 Project Part 1 的数据库系统实现，使用 PostgreSQL 存储数据，使用 Java 通过 JDBC 访问数据库并完成命令行交互。
 
-本项目是2026年春季CS307课程的数据库设计与实现任务，基于提供的航班相关CSV数据，完成E-R图设计、数据库搭建、数据导入和CRUD操作实现。
+项目围绕航班、机票、乘客与订单展开，完成了以下主要内容：
+
+- 关系数据库表设计
+- CSV 数据导入
+- 机票查询与订单管理
+- 登录认证
+- 联系人管理
+- 支持为自己或联系人订票
 
 ## 项目结构
-
-```Java
+```text
 DB_project1/
-├── src/                  # Java源代码
-│   ├── main/             # 主代码（CRUD操作实现）
-│   └── test/             # 测试代码
-├── sql/                  # SQL脚本
-│   ├── create_tables.sql # 创建表结构的DDL语句
-│   └── import_data.sql   # 数据导入脚本
-├── data/                 # 原始CSV数据文件
-│   ├── airline.csv       # 航空公司信息
-│   ├── airport.csv       # 机场信息
-│   ├── passenger.csv     # 乘客信息
-│   ├── region.csv        # 地区信息
-│   └── tickets.csv       # 机票信息（需拆分）
-├── docs/                 # 项目文档
-│   ├── report.pdf        # 项目报告
-│   └── er_diagram.png    # E-R图截图
-├── .gitignore            # Git忽略文件配置
-└── README.md             # 项目说明
+├─ data/                      原始 CSV 数据
+│  ├─ airline.csv
+│  ├─ airport.csv
+│  ├─ passenger.csv
+│  ├─ region.csv
+│  └─ tickets.csv
+├─ lib/
+│  └─ postgresql-42.2.5.jar   PostgreSQL JDBC 驱动
+├─ sql/
+│  ├─ create_tables.sql       建表脚本
+│  └─ import_data.sql         数据导入脚本
+├─ src/
+│  ├─ main/
+│  │  ├─ Connection.java      数据库连接管理
+│  │  ├─ function.java        核心业务逻辑
+│  │  └─ Main.java            程序主入口与命令行菜单
+│  └─ test/                   数据查询测试代码
+├─ out/                       编译输出目录
+└─ README.md
 ```
 
-## 环境依赖
+## 开发环境
+- Java: JDK 11 及以上
+- PostgreSQL: 建议 14 及以上
+- OS: Windows
+- IDE: IntelliJ IDEA 或其他支持 Java 的 IDE
 
-- **数据库**：PostgreSQL 14+
-- **Java**：JDK 11+
-- **IDE**：IntelliJ IDEA（或其他Java IDE）
-- **数据库客户端**：DataGrip（用于可视化E-R图）
+## 数据库配置
+当前项目在代码中的默认数据库连接配置位于 [Connection.java](d:/code/ideaprogramms/DB_project1/src/main/Connection.java)：
 
-## 快速开始
+```java
+private static final String DB_URL = "jdbc:postgresql://localhost:5432/cs307project1";
+private static final String DB_USER = "checker";
+private static final String DB_PASSWORD = "123456";
+```
 
-### 1. 数据库搭建
+如果本地数据库配置不同，需要先修改以上内容再运行程序。
 
-1. 启动PostgreSQL服务，创建数据库（例如 `cs307_project`）：
-   ```sql
-   CREATE DATABASE cs307_project;
-   ```
-2. 连接到数据库，执行 `sql/create_tables.sql` 创建表结构：
-   ```bash
-   psql -U username -d cs307_project -f sql/create_tables.sql
-   ```
+## 初始化步骤
 
-### 2. 数据导入
+### 1. 创建数据库
+在 PostgreSQL 中创建数据库，例如：
 
-1. 将 `data/` 目录下的CSV文件放入PostgreSQL可访问的路径。
-2. 执行 `sql/import_data.sql` 导入数据：
-   ```bash
-   psql -U username -d cs307_project -f sql/import_data.sql
-   ```
+```sql
+CREATE DATABASE cs307project1;
+```
 
-### 3. 运行Java程序
+### 2. 执行建表脚本
+运行：
 
-1. 在IDE中导入项目，配置依赖（如PostgreSQL JDBC驱动）。
-2. 运行 `src/main/` 目录下的主类（如 `Main.java`），执行CRUD操作。
+```powershell
+psql -U checker -d cs307project1 -f sql/create_tables.sql
+```
 
-## 功能说明
+### 3. 执行数据导入脚本
+运行：
 
-- **E-R图设计**：基于CSV数据绘制实体-关系图，包含航空公司、机场、乘客、地区、机票等实体。
-- **数据库设计**：遵循三大范式，设计表结构并添加主键、外键约束。
-- **数据导入**：通过SQL脚本将CSV数据批量导入数据库。
-- **CRUD操作**：
-  - 生成机票（基于日期范围）。
-  - 搜索机票（按出发/到达城市、日期等条件）。
-  - 模拟预订流程（记录订单、减少座位数）。
-  - 管理订单（搜索、删除）。
+```powershell
+psql -U checker -d cs307project1 -f sql/import_data.sql
+```
 
-## 技术栈
+说明：
+- `import_data.sql` 中使用了本项目本地路径导入 CSV
+- 如果项目目录位置变化，需要同步修改脚本中的文件路径
 
-- **数据库**：PostgreSQL
-- **后端**：Java
-- **SQL**：DDL（数据定义语言）、DML（数据操作语言）
+## 编译与运行
+
+### 1. 编译
+在项目根目录执行：
+
+```powershell
+javac -encoding UTF-8 -cp lib\postgresql-42.2.5.jar -d out\production\DB_project1 src\main\*.java src\test\*.java
+```
+
+### 2. 运行主程序
+```powershell
+java -cp "out\production\DB_project1;lib\postgresql-42.2.5.jar" main.Main
+```
+
+如果使用 IntelliJ IDEA，也可以直接运行 [Main.java](d:/code/ideaprogramms/DB_project1/src/main/Main.java)。
+
+## 程序使用方法
+
+### 1. 登录
+程序启动后先进行登录：
+
+- 输入 `passenger_id`
+- 输入该乘客的 `mobile_number`
+
+登录成功后进入主菜单。
+
+### 2. 主菜单功能
+当前系统支持以下功能：
+
+1. 给定日期范围，基于航班信息生成机票
+2. 按条件搜索机票
+3. 模拟乘客预订机票
+4. 管理我的订单
+5. 联系人管理
+0. 登出当前账号
+
+### 3. 搜索机票
+需要输入：
+
+- 出发城市
+- 到达城市
+- 日期
+
+可选输入：
+
+- 航空公司
+- 出发时间下限
+- 到达时间上限
+
+### 4. 预订机票
+预订流程如下：
+
+1. 先按条件搜索机票
+2. 输入要预订的 `ticket_id`
+3. 输入乘机人 `passenger_id`
+   - 直接回车表示给自己订票
+   - 输入联系人编号表示给联系人订票
+4. 选择舱位 `Economy` 或 `Business`
+
+预订成功后：
+
+- 在 `ticket_order` 中新增一条订单
+- 对应舱位余票减 1
+
+### 5. 我的订单
+支持：
+
+- 查看当前登录乘客的全部订单
+- 按 `order_id` 精确查询
+- 删除自己的订单
+
+删除订单后，对应舱位余票会恢复 1。
+
+### 6. 联系人管理
+联系人功能支持：
+
+- 查看我的联系人
+- 添加联系人
+
+说明：
+
+- 联系人必须是系统中已经存在的乘客
+- 一个乘客不能把自己添加为联系人
+- 不允许重复添加同一联系人
+- 订票时只能为自己或自己的联系人订票
+
+## 当前已实现功能
+
+### 数据库部分
+- `region`、`airline`、`airport`、`passenger`、`flight`、`ticket`、`ticket_order` 表设计
+- 新增 `passenger_contact` 表用于维护联系人关系
+- 支持数据导入与基础约束
+
+### Java 程序部分
+- 数据库连接初始化与测试
+- 登录认证
+- 机票查询
+- 订单创建、查询、删除
+- 联系人查看与添加
+- 支持为联系人订票
+- 支持单次程序启动后多用户轮流登录使用
+
+## 测试代码说明
+`src/test/` 目录下保留了若干查询测试类，用于数据检查与功能验证，例如：
+
+- 查询地区对应城市
+- 查询城市对应机场
+- 查询航班
+- 查询机票
+
+这些测试类不属于主菜单系统，但可用于单项功能检查。
 
 ## 注意事项
+- 本项目当前为命令行程序
+- 运行前必须保证 PostgreSQL 服务已启动
+- 如果数据库账号、密码、端口、库名不同，需要修改 [Connection.java](d:/code/ideaprogramms/DB_project1/src/main/Connection.java)
+- 如果项目移动了目录位置，`import_data.sql` 中的 CSV 路径也需要同步修改
+- 联系人关系表虽然会在程序启动时自动确保存在，但正式初始化数据库时仍建议执行 `sql/create_tables.sql`
 
-- `tickets.csv` 需要拆分为 `flight` 和 `ticket` 表。
-- 地区数据可能存在重复，需特殊处理（如香港）。
-- 到达时间可能跨天，查询时需注意处理逻辑。
-
-## 提交说明
-
-- 项目报告（PDF格式）放入 `docs/` 目录。
-- SQL脚本和Java源代码按目录结构组织。
-- 所有文件压缩为 `.zip` 格式后提交。
-
+## 后续可扩展方向
+- 优化“生成机票”流程
+- 增加图形界面或网页前端
+- 增强订单权限与认证机制
+- 扩展更完整的联系人订票流程
