@@ -15,6 +15,36 @@ import java.util.List;
 
 public class function {
 
+	public static String authenticatePassenger(String passengerId, String mobileNumber) {
+		if (isBlank(passengerId) || isBlank(mobileNumber)) {
+			System.err.println("passenger_id 和手机号不能为空。");
+			return null;
+		}
+
+		String sql = """
+				SELECT passenger_name
+				FROM passenger
+				WHERE passenger_id = ?
+				  AND mobile_number = ?
+				""";
+
+		try (Connection conn = main.Connection.getConnection();
+			 PreparedStatement ps = conn.prepareStatement(sql)) {
+			ps.setString(1, passengerId.trim());
+			ps.setString(2, mobileNumber.trim());
+
+			try (ResultSet rs = ps.executeQuery()) {
+				if (rs.next()) {
+					return rs.getString("passenger_name");
+				}
+				return null;
+			}
+		} catch (SQLException e) {
+			System.err.println("登录认证失败: " + e.getMessage());
+			return null;
+		}
+	}
+
 	public static int generateTicketsByDateRange(String startDateText, String endDateText) {
 		LocalDate startDate;
 		LocalDate endDate;
@@ -435,6 +465,10 @@ public class function {
 		}
 	}
 
+	public static int searchOrdersForPassenger(String orderIdText, String passengerId) {
+		return searchOrders(orderIdText, passengerId);
+	}
+
 	public static boolean deleteOrder(int orderId) {
 		String lockOrderSql = """
 				SELECT o.order_id, o.ticket_id, o.cabin_class
@@ -476,6 +510,89 @@ public class function {
 
 				try (PreparedStatement deletePs = conn.prepareStatement(deleteOrderSql)) {
 					deletePs.setInt(1, orderId);
+					int deletedRows = deletePs.executeUpdate();
+					if (deletedRows != 1) {
+						System.out.println("删除订单失败。");
+						conn.rollback();
+						return false;
+					}
+				}
+
+				String restoreSql = "Economy".equalsIgnoreCase(cabinClass) ? restoreEconomySql : restoreBusinessSql;
+				try (PreparedStatement restorePs = conn.prepareStatement(restoreSql)) {
+					restorePs.setInt(1, ticketId);
+					int restoredRows = restorePs.executeUpdate();
+					if (restoredRows != 1) {
+						System.out.println("恢复余票失败。");
+						conn.rollback();
+						return false;
+					}
+				}
+
+				conn.commit();
+				System.out.println("订单删除成功，且对应舱位余票已恢复 1。");
+				return true;
+			} catch (SQLException e) {
+				conn.rollback();
+				System.err.println("删除订单失败: " + e.getMessage());
+				return false;
+			} finally {
+				conn.setAutoCommit(true);
+			}
+		} catch (SQLException e) {
+			System.err.println("删除订单失败: " + e.getMessage());
+			return false;
+		}
+	}
+
+	public static boolean deleteOrderForPassenger(int orderId, String passengerId) {
+		String lockOrderSql = """
+				SELECT o.order_id, o.ticket_id, o.cabin_class
+				FROM ticket_order o
+				WHERE o.order_id = ?
+				  AND o.passenger_id = ?
+				FOR UPDATE
+				""";
+		String deleteOrderSql = """
+				DELETE FROM ticket_order
+				WHERE order_id = ?
+				  AND passenger_id = ?
+				""";
+		String restoreEconomySql = """
+				UPDATE ticket
+				SET economy_remain = economy_remain + 1
+				WHERE ticket_id = ?
+				""";
+		String restoreBusinessSql = """
+				UPDATE ticket
+				SET business_remain = business_remain + 1
+				WHERE ticket_id = ?
+				""";
+
+		try (Connection conn = main.Connection.getConnection()) {
+			conn.setAutoCommit(false);
+
+			try {
+				int ticketId;
+				String cabinClass;
+
+				try (PreparedStatement lockPs = conn.prepareStatement(lockOrderSql)) {
+					lockPs.setInt(1, orderId);
+					lockPs.setString(2, passengerId);
+					try (ResultSet rs = lockPs.executeQuery()) {
+						if (!rs.next()) {
+							System.out.println("未找到属于当前登录用户的该订单。");
+							conn.rollback();
+							return false;
+						}
+						ticketId = rs.getInt("ticket_id");
+						cabinClass = rs.getString("cabin_class");
+					}
+				}
+
+				try (PreparedStatement deletePs = conn.prepareStatement(deleteOrderSql)) {
+					deletePs.setInt(1, orderId);
+					deletePs.setString(2, passengerId);
 					int deletedRows = deletePs.executeUpdate();
 					if (deletedRows != 1) {
 						System.out.println("删除订单失败。");

@@ -3,15 +3,41 @@ package main;
 import java.util.Scanner;
 
 public class Main {
+	private static String currentPassengerId;
+	private static String currentPassengerName;
+
 	private static void printMenu() {
 		System.out.println("================ 航空票务系统菜单 ================");
 		System.out.println("1. 给定日期范围，基于航班信息生成机票");
 		System.out.println("2. 按条件搜索机票");
 		System.out.println("3. 模拟乘客预订机票");
-		System.out.println("4. 搜索/删除订单");
+		System.out.println("4. 管理我的订单");
 		System.out.println("0. 退出");
 		System.out.println("================================================");
+		System.out.println("当前登录用户: " + currentPassengerName + " (" + currentPassengerId + ")");
 		System.out.print("请选择操作: ");
+	}
+
+	private static boolean handleLogin(Scanner scanner) {
+		System.out.println("请先登录后再使用系统。");
+
+		while (true) {
+			System.out.print("请输入 passenger_id: ");
+			String passengerId = scanner.nextLine().trim();
+
+			System.out.print("请输入手机号: ");
+			String mobileNumber = scanner.nextLine().trim();
+
+			String passengerName = function.authenticatePassenger(passengerId, mobileNumber);
+			if (passengerName != null) {
+				currentPassengerId = passengerId;
+				currentPassengerName = passengerName;
+				System.out.println("登录成功，欢迎你，" + currentPassengerName + "。\n");
+				return true;
+			}
+
+			System.out.println("登录失败，passenger_id 或手机号不正确，请重试。\n");
+		}
 	}
 
 	private static void handleGenerateTickets(Scanner scanner) {
@@ -106,39 +132,46 @@ public class Main {
 			return;
 		}
 
-		System.out.print("请输入 passenger_id: ");
-		String passengerId = scanner.nextLine().trim();
-
+		System.out.println("当前预订用户: " + currentPassengerName + " (" + currentPassengerId + ")");
 		System.out.print("请选择舱位（Economy/Business）: ");
 		String cabinClass = scanner.nextLine().trim();
 
-		boolean success = function.bookTicket(passengerId, ticketId, cabinClass);
+		boolean success = function.bookTicket(currentPassengerId, ticketId, cabinClass);
 		if (success) {
 			System.out.println("订单已写入 ticket_order，且余票已同步减少 1。");
 		}
 	}
 
 	private static void printOrderMenu() {
-		System.out.println("--------------- 订单管理 ---------------");
-		System.out.println("1. 搜索机票订单");
-		System.out.println("2. 删除机票订单");
+		System.out.println("--------------- 我的订单 ---------------");
+		System.out.println("1. 搜索我的机票订单");
+		System.out.println("2. 删除我的机票订单");
 		System.out.println("0. 返回上一级");
 		System.out.println("----------------------------------------");
 		System.out.print("请选择操作: ");
 	}
 
 	private static void handleOrderSearch(Scanner scanner) {
-		System.out.print("请输入 order_id（可留空）: ");
+		System.out.println("当前登录用户的全部订单如下：");
+		function.searchOrdersForPassenger("", currentPassengerId);
+		System.out.println();
+
+		System.out.print("请输入 order_id（可留空，直接回车表示查看全部）: ");
 		String orderIdText = scanner.nextLine().trim();
 
-		System.out.print("请输入 passenger_id（可留空）: ");
-		String passengerId = scanner.nextLine().trim();
-
-		int resultCount = function.searchOrders(orderIdText, passengerId);
+		int resultCount = function.searchOrdersForPassenger(orderIdText, currentPassengerId);
 		System.out.println("本次共返回 " + resultCount + " 条订单记录。");
 	}
 
 	private static void handleOrderDelete(Scanner scanner) {
+		System.out.println("当前登录用户的全部订单如下：");
+		int resultCount = function.searchOrdersForPassenger("", currentPassengerId);
+		if (resultCount <= 0) {
+			System.out.println("当前没有可删除的订单。");
+			return;
+		}
+		System.out.println();
+
 		System.out.print("请输入要删除的 order_id: ");
 		String orderIdText = scanner.nextLine().trim();
 
@@ -150,7 +183,7 @@ public class Main {
 			return;
 		}
 
-		boolean success = function.deleteOrder(orderId);
+		boolean success = function.deleteOrderForPassenger(orderId, currentPassengerId);
 		if (success) {
 			System.out.println("删除完成。");
 		}
@@ -189,6 +222,9 @@ public class Main {
 
 		try (Scanner scanner = new Scanner(System.in)) {
 			System.out.println("系统已启动。\n");
+			if (!handleLogin(scanner)) {
+				return;
+			}
 
 			while (true) {
 				printMenu();
