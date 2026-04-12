@@ -6,6 +6,11 @@ public class Main {
 	private static String currentPassengerId;
 	private static String currentPassengerName;
 
+	private static void logout() {
+		currentPassengerId = null;
+		currentPassengerName = null;
+	}
+
 	private static void printMenu() {
 		System.out.println("================ 航空票务系统菜单 ================");
 		System.out.println("1. 给定日期范围，基于航班信息生成机票");
@@ -13,7 +18,7 @@ public class Main {
 		System.out.println("3. 模拟乘客预订机票");
 		System.out.println("4. 管理我的订单");
 		System.out.println("5. 联系人管理");
-		System.out.println("0. 退出");
+		System.out.println("0. 登出当前账号");
 		System.out.println("================================================");
 		System.out.println("当前登录用户: " + currentPassengerName + " (" + currentPassengerId + ")");
 		System.out.print("请选择操作: ");
@@ -280,38 +285,47 @@ public class Main {
 
 		try (Scanner scanner = new Scanner(System.in)) {
 			System.out.println("系统已启动。\n");
-			if (!handleLogin(scanner)) {
-				return;
-			}
 
 			while (true) {
-				printMenu();
-				String choice = scanner.nextLine().trim();
-
-				switch (choice) {
-					case "1":
-						handleGenerateTickets(scanner);
-						break;
-					case "2":
-						handleSearchTickets(scanner);
-						break;
-					case "3":
-						handleBookTicket(scanner);
-						break;
-					case "4":
-						handleOrders(scanner);
-						break;
-					case "5":
-						handleContacts(scanner);
-						break;
-					case "0":
-						System.out.println("程序已退出。");
-						return;
-					default:
-						System.out.println("无效输入，请输入 0-5。\n");
+				if (!handleLogin(scanner)) {
+					return;
 				}
 
-				System.out.println();
+				while (true) {
+					printMenu();
+					String choice = scanner.nextLine().trim();
+
+					switch (choice) {
+						case "1":
+							handleGenerateTickets(scanner);
+							break;
+						case "2":
+							handleSearchTickets(scanner);
+							break;
+						case "3":
+							handleBookTicket(scanner);
+							break;
+						case "4":
+							handleOrders(scanner);
+							break;
+						case "5":
+							handleContacts(scanner);
+							break;
+						case "0":
+							System.out.println("当前账号已登出，即将返回登录界面。\n");
+							logout();
+							break;
+						default:
+							System.out.println("无效输入，请输入 0-5。\n");
+							continue;
+					}
+
+					if (currentPassengerId == null) {
+						break;
+					}
+
+					System.out.println();
+				}
 			}
 		}
 	}
