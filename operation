@@ -1,0 +1,6 @@
+先进入项目：cd /d d:\code\ideaprogramms\DB_project1
+编译：javac -encoding UTF-8 -cp lib\postgresql-42.2.5.jar -d out\production\DB_project1 src\main\*.java src\test\*.java
+运行主程序：java -cp "out\production\DB_project1;lib\postgresql-42.2.5.jar" main.Main
+
+
+
