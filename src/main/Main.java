@@ -12,6 +12,7 @@ public class Main {
 		System.out.println("2. 按条件搜索机票");
 		System.out.println("3. 模拟乘客预订机票");
 		System.out.println("4. 管理我的订单");
+		System.out.println("5. 联系人管理");
 		System.out.println("0. 退出");
 		System.out.println("================================================");
 		System.out.println("当前登录用户: " + currentPassengerName + " (" + currentPassengerId + ")");
@@ -132,11 +133,22 @@ public class Main {
 			return;
 		}
 
-		System.out.println("当前预订用户: " + currentPassengerName + " (" + currentPassengerId + ")");
+		System.out.println("当前登录用户: " + currentPassengerName + " (" + currentPassengerId + ")");
+		System.out.print("请输入乘机人 passenger_id（直接回车表示为自己订票）: ");
+		String travelerPassengerId = scanner.nextLine().trim();
+		if (travelerPassengerId.isEmpty()) {
+			travelerPassengerId = currentPassengerId;
+		}
+
 		System.out.print("请选择舱位（Economy/Business）: ");
 		String cabinClass = scanner.nextLine().trim();
 
-		boolean success = function.bookTicket(currentPassengerId, ticketId, cabinClass);
+		boolean success = function.bookTicketForTraveler(
+				currentPassengerId,
+				travelerPassengerId,
+				ticketId,
+				cabinClass
+		);
 		if (success) {
 			System.out.println("订单已写入 ticket_order，且余票已同步减少 1。");
 		}
@@ -211,12 +223,58 @@ public class Main {
 		}
 	}
 
+	private static void printContactMenu() {
+		System.out.println("--------------- 联系人管理 ---------------");
+		System.out.println("1. 查看我的联系人");
+		System.out.println("2. 添加联系人");
+		System.out.println("0. 返回上一级");
+		System.out.println("------------------------------------------");
+		System.out.print("请选择操作: ");
+	}
+
+	private static void handleContactList() {
+		function.listContacts(currentPassengerId);
+	}
+
+	private static void handleAddContact(Scanner scanner) {
+		System.out.print("请输入要添加的联系人 passenger_id: ");
+		String contactPassengerId = scanner.nextLine().trim();
+
+		function.addContact(currentPassengerId, contactPassengerId);
+	}
+
+	private static void handleContacts(Scanner scanner) {
+		while (true) {
+			printContactMenu();
+			String choice = scanner.nextLine().trim();
+
+			switch (choice) {
+				case "1":
+					handleContactList();
+					break;
+				case "2":
+					handleAddContact(scanner);
+					break;
+				case "0":
+					return;
+				default:
+					System.out.println("无效输入，请输入 0-2。\n");
+			}
+
+			System.out.println();
+		}
+	}
+
 	public static void main(String[] args) {
 		if (!Connection.initDriver()) {
 			return;
 		}
 
 		if (!Connection.testConnection()) {
+			return;
+		}
+
+		if (!function.ensurePassengerContactTable()) {
 			return;
 		}
 
@@ -243,11 +301,14 @@ public class Main {
 					case "4":
 						handleOrders(scanner);
 						break;
+					case "5":
+						handleContacts(scanner);
+						break;
 					case "0":
 						System.out.println("程序已退出。");
 						return;
 					default:
-						System.out.println("无效输入，请输入 0-4。\n");
+						System.out.println("无效输入，请输入 0-5。\n");
 				}
 
 				System.out.println();

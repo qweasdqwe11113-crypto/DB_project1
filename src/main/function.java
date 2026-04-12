@@ -15,6 +15,28 @@ import java.util.List;
 
 public class function {
 
+	public static boolean ensurePassengerContactTable() {
+		String sql = """
+				CREATE TABLE IF NOT EXISTS passenger_contact (
+				    owner_passenger_id VARCHAR(10),
+				    contact_passenger_id VARCHAR(10),
+				    PRIMARY KEY (owner_passenger_id, contact_passenger_id),
+				    FOREIGN KEY (owner_passenger_id) REFERENCES passenger(passenger_id),
+				    FOREIGN KEY (contact_passenger_id) REFERENCES passenger(passenger_id),
+				    CHECK (owner_passenger_id <> contact_passenger_id)
+				)
+				""";
+
+		try (Connection conn = main.Connection.getConnection();
+			 PreparedStatement ps = conn.prepareStatement(sql)) {
+			ps.executeUpdate();
+			return true;
+		} catch (SQLException e) {
+			System.err.println("创建联系人关系表失败: " + e.getMessage());
+			return false;
+		}
+	}
+
 	public static String authenticatePassenger(String passengerId, String mobileNumber) {
 		if (isBlank(passengerId) || isBlank(mobileNumber)) {
 			System.err.println("passenger_id 和手机号不能为空。");
@@ -42,6 +64,137 @@ public class function {
 		} catch (SQLException e) {
 			System.err.println("登录认证失败: " + e.getMessage());
 			return null;
+		}
+	}
+
+	public static int listContacts(String ownerPassengerId) {
+		String sql = """
+				SELECT p.passenger_id, p.passenger_name, p.mobile_number
+				FROM passenger_contact pc
+				JOIN passenger p ON pc.contact_passenger_id = p.passenger_id
+				WHERE pc.owner_passenger_id = ?
+				ORDER BY p.passenger_id
+				""";
+
+		int contactCount = 0;
+
+		try (Connection conn = main.Connection.getConnection();
+			 PreparedStatement ps = conn.prepareStatement(sql)) {
+			ps.setString(1, ownerPassengerId);
+
+			try (ResultSet rs = ps.executeQuery()) {
+				System.out.println("联系人列表：");
+				while (rs.next()) {
+					contactCount++;
+					System.out.println(
+							"- passenger_id=" + rs.getString("passenger_id")
+									+ " | passenger_name=" + rs.getString("passenger_name")
+									+ " | mobile_number=" + rs.getString("mobile_number")
+					);
+				}
+			}
+
+			if (contactCount == 0) {
+				System.out.println("当前没有联系人。");
+			} else {
+				System.out.println("共查询到 " + contactCount + " 个联系人。");
+			}
+
+			return contactCount;
+		} catch (SQLException e) {
+			System.err.println("查询联系人失败: " + e.getMessage());
+			return 0;
+		}
+	}
+
+	public static boolean addContact(String ownerPassengerId, String contactPassengerId) {
+		if (isBlank(ownerPassengerId) || isBlank(contactPassengerId)) {
+			System.err.println("乘客编号不能为空。");
+			return false;
+		}
+
+		String ownerId = ownerPassengerId.trim();
+		String contactId = contactPassengerId.trim();
+		if (ownerId.equals(contactId)) {
+			System.out.println("不能将自己添加为联系人。");
+			return false;
+		}
+
+		String checkPassengerSql = "SELECT 1 FROM passenger WHERE passenger_id = ?";
+		String checkContactSql = """
+				SELECT 1
+				FROM passenger_contact
+				WHERE owner_passenger_id = ?
+				  AND contact_passenger_id = ?
+				""";
+		String insertSql = """
+				INSERT INTO passenger_contact(owner_passenger_id, contact_passenger_id)
+				VALUES (?, ?)
+				""";
+
+		try (Connection conn = main.Connection.getConnection()) {
+			if (!passengerExists(conn, checkPassengerSql, contactId)) {
+				System.out.println("未找到对应的联系人 passenger_id。");
+				return false;
+			}
+
+			try (PreparedStatement checkPs = conn.prepareStatement(checkContactSql)) {
+				checkPs.setString(1, ownerId);
+				checkPs.setString(2, contactId);
+				try (ResultSet rs = checkPs.executeQuery()) {
+					if (rs.next()) {
+						System.out.println("该联系人已存在。");
+						return false;
+					}
+				}
+			}
+
+			try (PreparedStatement insertPs = conn.prepareStatement(insertSql)) {
+				insertPs.setString(1, ownerId);
+				insertPs.setString(2, contactId);
+				int insertedRows = insertPs.executeUpdate();
+				if (insertedRows == 1) {
+					System.out.println("联系人添加成功。");
+					return true;
+				}
+			}
+
+			System.out.println("联系人添加失败。");
+			return false;
+		} catch (SQLException e) {
+			System.err.println("添加联系人失败: " + e.getMessage());
+			return false;
+		}
+	}
+
+	public static boolean canBookForPassenger(String ownerPassengerId, String travelerPassengerId) {
+		if (isBlank(ownerPassengerId) || isBlank(travelerPassengerId)) {
+			return false;
+		}
+
+		String ownerId = ownerPassengerId.trim();
+		String travelerId = travelerPassengerId.trim();
+		if (ownerId.equals(travelerId)) {
+			return true;
+		}
+
+		String sql = """
+				SELECT 1
+				FROM passenger_contact
+				WHERE owner_passenger_id = ?
+				  AND contact_passenger_id = ?
+				""";
+
+		try (Connection conn = main.Connection.getConnection();
+			 PreparedStatement ps = conn.prepareStatement(sql)) {
+			ps.setString(1, ownerId);
+			ps.setString(2, travelerId);
+			try (ResultSet rs = ps.executeQuery()) {
+				return rs.next();
+			}
+		} catch (SQLException e) {
+			System.err.println("校验联系人权限失败: " + e.getMessage());
+			return false;
 		}
 	}
 
@@ -390,6 +543,26 @@ public class function {
 			System.err.println("预订失败: " + e.getMessage());
 			return false;
 		}
+	}
+
+	public static boolean bookTicketForTraveler(
+			String ownerPassengerId,
+			String travelerPassengerId,
+			int ticketId,
+			String cabinClass
+	) {
+		if (isBlank(travelerPassengerId)) {
+			System.out.println("乘机人 passenger_id 不能为空。");
+			return false;
+		}
+
+		String travelerId = travelerPassengerId.trim();
+		if (!canBookForPassenger(ownerPassengerId, travelerId)) {
+			System.out.println("当前登录用户只能为自己或自己的联系人订票。");
+			return false;
+		}
+
+		return bookTicket(travelerId, ticketId, cabinClass);
 	}
 
 	public static int searchOrders(String orderIdText, String passengerId) {
