@@ -29,7 +29,7 @@ public class listFlightsByIataCodes {
 	public static void listFlightsByIataCodes(String sourceIataCode, String destinationIataCode) {
 		String sql = """
 				SELECT DISTINCT
-					f.flight_number,
+					SPLIT_PART(f.flight_number, '_', 1) AS flight_number,
 					sa.city AS source_city,
 					sr.region_name AS source_region,
 					da.city AS destination_city,
@@ -41,7 +41,7 @@ public class listFlightsByIataCodes {
 				JOIN region dr ON da.region_name = dr.region_name
 				WHERE sa.airport_code = ?
 				  AND da.airport_code = ?
-				ORDER BY f.flight_number
+				ORDER BY flight_number
 				""";
 
 		try (java.sql.Connection conn = main.Connection.getConnection();
