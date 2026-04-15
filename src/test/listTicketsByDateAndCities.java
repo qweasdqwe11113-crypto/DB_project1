@@ -1,9 +1,9 @@
 package test;
 
+import java.sql.Date;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Date;
 import java.time.LocalDate;
 import java.time.format.DateTimeParseException;
 import java.util.Scanner;
@@ -37,23 +37,22 @@ public class listTicketsByDateAndCities {
 					f.arrival_time,
 					f.arrival_day_offset,
 					f.source_airport,
-					f.destination_airport,
-					t.economy_price
+					f.destination_airport
 				FROM flight f
 				JOIN ticket t ON t.flight_number = f.flight_number
 				JOIN airport sa ON sa.airport_name = f.source_airport
 				JOIN airport da ON da.airport_name = f.destination_airport
 				WHERE f.flight_date = ?
-				  AND sa.city = ?
-				  AND da.city = ?
-				ORDER BY f.departure_time ASC
+				  AND LOWER(sa.city) = LOWER(?)
+				  AND LOWER(da.city) = LOWER(?)
+				ORDER BY t.economy_price ASC, f.departure_time ASC
 				""";
 
 		Date flightDate;
 		try {
 			flightDate = Date.valueOf(LocalDate.parse(dateText));
 		} catch (DateTimeParseException e) {
-			System.err.println("日期格式错误，请使用 YYYY-MM-DD，例如 2026-02-01。");
+			System.err.println("日期格式错误，请使用 YYYY-MM-DD，例如 2026-02-05。");
 			return;
 		}
 
@@ -66,7 +65,7 @@ public class listTicketsByDateAndCities {
 
 			try (ResultSet rs = ps.executeQuery()) {
 				boolean hasResult = false;
-				System.out.println("查询结果（按 departure_time 升序）：");
+				System.out.println("查询结果（按 economy_price 升序）：");
 
 				while (rs.next()) {
 					hasResult = true;
@@ -76,11 +75,10 @@ public class listTicketsByDateAndCities {
 					String arrivalDisplay = dayOffset > 0 ? arrivalTime + "(+" + dayOffset + ")" : arrivalTime;
 
 					System.out.println(
-							"- arrive_time=" + arrivalDisplay
-									+ " | departure_airport=" + rs.getString("source_airport")
-									+ " | destination_airport=" + rs.getString("destination_airport")
-									+ " | economy_price=" + rs.getBigDecimal("economy_price")
-									+ " | departure_time=" + departureTime
+							"- d_time=" + departureTime
+									+ " | a_time=" + arrivalDisplay
+									+ " | ap1.name=" + rs.getString("source_airport")
+									+ " | ap2.name=" + rs.getString("destination_airport")
 					);
 				}
 
